@@ -1,0 +1,45 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  terraform-checks:
+    name: Validacion de Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+
+      - name: Verificar formato de Terraform
+        run: terraform fmt -check
+
+      - name: Inicializar Terraform (Sin Backend)
+        run: terraform init -backend=false
+
+      - name: Validar sintaxis de Terraform
+        run: terraform validate
+
+  security-scan:
+    name: Escaneo de Seguridad (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo del repositorio
+        uses: actions/checkout@v4
+
+      - name: Escanear configuraciones de IaC en busca de vulnerabilidades
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          hide-shortcut-table: 'true'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
